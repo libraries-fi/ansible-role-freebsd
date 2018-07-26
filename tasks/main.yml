@@ -1,0 +1,52 @@
+---
+# tasks file for libraries-fi.freebsd
+
+- name: Copy rc.conf in place.
+  copy:
+    src=rc.conf
+    dest=/etc/rc.conf
+    owner=root
+    group=wheel
+    mode=0644
+
+- name: Configure periodic.
+  copy:
+    dest: /etc/periodic.conf
+    owner: root
+    group: wheel
+    mode: 0644
+    content: |
+      daily_status_security_enable="NO"
+      weekly_locate_enable="NO"
+      monthly_accounting_enable="NO"
+      monthly_status_security_enable="NO"
+      security_status_chksetuid_enable="NO"
+      security_status_neggrpperm_enable="NO"
+      weekly_whatis_enable="NO"
+
+
+
+
+
+- name: Create swap file.
+  command: creates=/usr/swap0 dd if=/dev/zero of=/usr/swap0 bs=1m count=384
+
+- name: Set swap file permissions.
+  file:
+    path=/usr/swap0
+    owner=root
+    group=wheel
+    mode=0600
+    state=file
+
+- name: Add swap to fstab.
+  lineinfile:
+    dest=/etc/fstab
+    line="md99	none	swap	sw,file=/usr/swap0,late	0	0"
+    state=present
+  register: swap
+
+
+- name: Enable swap.
+  command: swapon -aL
+  when: swap.changed
